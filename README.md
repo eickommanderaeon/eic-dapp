@@ -25,3 +25,10 @@ Open http://localhost:3000.
 ```bash
 npm run build
 ```
+
+`npm run build` uses compile mode to avoid forking in restricted environments.
+For a normal build on machines that allow process forking, run:
+
+```bash
+npm run build:generate
+```
