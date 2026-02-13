@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f5f0;
+  --foreground: #12151b;
+  --muted: #6b7280;
+  --surface: #ffffff;
+  --surface-strong: #0f172a;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua",
+    Palatino, serif;
+  --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", "Noto Sans",
+    sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0f17;
+    --foreground: #f1f5f9;
+    --muted: #94a3b8;
+    --surface: #0f172a;
+    --surface-strong: #020617;
+  }
+}
+
+body {
+  background: radial-gradient(
+      1200px 600px at 10% -10%,
+      rgba(148, 163, 184, 0.25),
+      transparent
+    ),
+    radial-gradient(
+      900px 400px at 80% 0%,
+      rgba(226, 232, 240, 0.6),
+      transparent
+    ),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), serif;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display), serif;
+}
