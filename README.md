@@ -9,6 +9,8 @@ npm install
 ```
 
 Create a local `.env` from `.env.example` if needed.
+Optionally add `NEXT_PUBLIC_WC_PROJECT_ID` in `.env.local` to enable
+WalletConnect (recommended).
 
 ## Run
 

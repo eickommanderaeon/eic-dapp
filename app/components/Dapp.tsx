@@ -20,7 +20,7 @@ const fallbackChainId = 8453;
 export default function Dapp() {
   const chainId = useChainId();
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors, isPending, pendingConnector } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
@@ -65,6 +65,10 @@ export default function Dapp() {
   }, [balance, decimals]);
 
   const displayedSymbol = symbol ?? "EIC";
+  const connectorLabels: Record<string, string> = {
+    injected: "Browser wallet",
+    walletConnect: "WalletConnect",
+  };
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-16 pt-16">
@@ -95,14 +99,23 @@ export default function Dapp() {
             </div>
             <div className="flex flex-wrap gap-3">
               {!isConnected ? (
-                <button
-                  className="rounded-full border border-slate-900 bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
-                  onClick={() => connect({ connector: connectors[0] })}
-                  type="button"
-                  disabled={isPending}
-                >
-                  {isPending ? "Connecting" : "Connect wallet"}
-                </button>
+                connectors.map((connector) => {
+                  const isConnectorPending =
+                    isPending && pendingConnector?.id === connector.id;
+                  return (
+                    <button
+                      key={connector.id}
+                      className="rounded-full border border-slate-900/10 bg-white px-5 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-900/30 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => connect({ connector })}
+                      type="button"
+                      disabled={!connector.ready || isPending}
+                    >
+                      {isConnectorPending
+                        ? "Connecting"
+                        : connectorLabels[connector.id] ?? connector.name}
+                    </button>
+                  );
+                })
               ) : (
                 <button
                   className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
