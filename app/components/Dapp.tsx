@@ -74,6 +74,14 @@ export default function Dapp() {
 
   console.log("account", account);
   console.log("isConnected", isConnected);
+  console.log(
+    "connectors",
+    connectors.map((connector) => ({
+      id: connector.id,
+      name: connector.name,
+      ready: connector.ready,
+    })),
+  );
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-16 pt-16">
@@ -102,7 +110,7 @@ export default function Dapp() {
                 {isConnected ? "Connected" : "Not connected"}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="relative z-10 flex flex-wrap gap-3 pointer-events-auto">
               {!isConnected ? (
                 connectors.map((connector) => {
                   const isConnectorPending =
@@ -110,10 +118,12 @@ export default function Dapp() {
                   return (
                     <button
                       key={connector.id}
-                      className="rounded-full border border-slate-900/10 bg-white px-5 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-900/30 disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={() => connect({ connector })}
+                      className="rounded-full border border-slate-900/10 bg-white px-5 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-900/30"
+                      onClick={() => {
+                        console.log("connect click", connector.id);
+                        connect({ connector });
+                      }}
                       type="button"
-                      disabled={!connector.ready || isPending}
                     >
                       {isConnectorPending
                         ? "Connecting"
