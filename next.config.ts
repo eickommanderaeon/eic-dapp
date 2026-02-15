@@ -4,16 +4,18 @@ import { fileURLToPath } from "url";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
 
+const enableWorkerThreads = process.env.NEXT_ENABLE_WORKER_THREADS === "1";
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: rootDir,
   },
   experimental: {
     cpus: 1,
-    workerThreads: true,
+    workerThreads: enableWorkerThreads,
     webpackBuildWorker: false,
   },
-  webpack: (config) => {
+  webpack: (config, { dev }) => {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),
@@ -26,6 +28,9 @@ const nextConfig: NextConfig = {
       porto: false,
       "porto/internal": false,
     };
+    if (!dev) {
+      config.devtool = false;
+    }
     return config;
   },
   typescript: {
