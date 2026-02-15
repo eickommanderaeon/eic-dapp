@@ -3,13 +3,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { injected } from "@wagmi/core";
-import { walletConnect } from "@wagmi/connectors";
+import { metaMask, walletConnect } from "@wagmi/connectors";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { base } from "wagmi/chains";
 
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 const connectors = [
   injected({ shimDisconnect: true }),
+  metaMask({
+    dappMetadata: {
+      name: "EIC DApp",
+      url: "https://eic.foundation",
+    },
+  }),
   ...(walletConnectProjectId
     ? [
         walletConnect({

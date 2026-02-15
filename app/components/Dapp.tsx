@@ -19,7 +19,8 @@ const fallbackChainId = 8453;
 
 export default function Dapp() {
   const chainId = useChainId();
-  const { address, isConnected } = useAccount();
+  const account = useAccount();
+  const { address, isConnected } = account;
   const { connect, connectors, isPending, pendingConnector } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
@@ -67,8 +68,12 @@ export default function Dapp() {
   const displayedSymbol = symbol ?? "EIC";
   const connectorLabels: Record<string, string> = {
     injected: "Browser wallet",
+    metaMask: "MetaMask",
     walletConnect: "WalletConnect",
   };
+
+  console.log("account", account);
+  console.log("isConnected", isConnected);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-6 pb-16 pt-16">
@@ -165,6 +170,16 @@ export default function Dapp() {
               </p>
             </div>
           </div>
+          {isConnected && address && (
+            <div className="mt-6 rounded-2xl border border-slate-100 bg-white/80 p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                Connected address
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                {address}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="rounded-3xl border border-slate-200/80 bg-slate-900 p-8 text-white">
