@@ -12,10 +12,13 @@ import {
 import { formatUnits } from "viem";
 import { base } from "wagmi/chains";
 import { erc20Abi } from "../lib/erc20Abi";
+import { v2PairAbi } from "../lib/v2PairAbi";
 
 const fallbackToken = "0x867776d88DfD7061324FD97C8e03fb2DcC29a024";
 const fallbackPool = "0x3Ce3631F923500563F55f0FB895e101E802cb47A";
 const fallbackChainId = 8453;
+const wethAddress =
+  "0x4200000000000000000000000000000000000006" as const;
 
 export default function Dapp() {
   const chainId = useChainId();
@@ -54,6 +57,47 @@ export default function Dapp() {
     chainId: base.id,
     query: {
       enabled: Boolean(address) && isBase,
+    },
+  });
+
+  const { data: token0 } = useReadContract({
+    abi: v2PairAbi,
+    address: poolAddress,
+    functionName: "token0",
+    chainId: base.id,
+  });
+
+  const { data: token1 } = useReadContract({
+    abi: v2PairAbi,
+    address: poolAddress,
+    functionName: "token1",
+    chainId: base.id,
+  });
+
+  const { data: reserves } = useReadContract({
+    abi: v2PairAbi,
+    address: poolAddress,
+    functionName: "getReserves",
+    chainId: base.id,
+  });
+
+  const { data: token0Decimals } = useReadContract({
+    abi: erc20Abi,
+    address: token0 ?? tokenAddress,
+    functionName: "decimals",
+    chainId: base.id,
+    query: {
+      enabled: Boolean(token0),
+    },
+  });
+
+  const { data: token1Decimals } = useReadContract({
+    abi: erc20Abi,
+    address: token1 ?? tokenAddress,
+    functionName: "decimals",
+    chainId: base.id,
+    query: {
+      enabled: Boolean(token1),
     },
   });
 
@@ -97,6 +141,65 @@ export default function Dapp() {
       ? `${formattedInteger}.${trimmedFraction}`
       : formattedInteger;
   }, [formattedBalance]);
+  const eicPriceInWeth = useMemo(() => {
+    if (!reserves || !token0 || !token1) {
+      return null;
+    }
+    const [reserve0, reserve1] = reserves;
+    const token0IsWeth = token0.toLowerCase() === wethAddress.toLowerCase();
+    const token1IsWeth = token1.toLowerCase() === wethAddress.toLowerCase();
+    const token0IsEic = token0.toLowerCase() === tokenAddress.toLowerCase();
+    const token1IsEic = token1.toLowerCase() === tokenAddress.toLowerCase();
+
+    if (!(token0IsWeth || token1IsWeth) || !(token0IsEic || token1IsEic)) {
+      return null;
+    }
+
+    const wethReserve = token0IsWeth ? reserve0 : reserve1;
+    const eicReserve = token0IsEic ? reserve0 : reserve1;
+    const wethDecimals = token0IsWeth ? token0Decimals : token1Decimals;
+    const eicDecimals = token0IsEic ? token0Decimals : token1Decimals;
+
+    if (wethDecimals === undefined || eicDecimals === undefined) {
+      return null;
+    }
+
+    const wethAmount = Number(formatUnits(wethReserve, wethDecimals));
+    const eicAmount = Number(formatUnits(eicReserve, eicDecimals));
+    if (!Number.isFinite(wethAmount) || !Number.isFinite(eicAmount)) {
+      return null;
+    }
+    if (eicAmount === 0) {
+      return null;
+    }
+    return wethAmount / eicAmount;
+  }, [reserves, token0, token1, token0Decimals, token1Decimals, tokenAddress]);
+  const eicPriceDisplay = useMemo(() => {
+    if (eicPriceInWeth === null) {
+      return "—";
+    }
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 8,
+    }).format(eicPriceInWeth);
+  }, [eicPriceInWeth]);
+  const eicValueInWeth = useMemo(() => {
+    if (!isConnected || eicPriceInWeth === null) {
+      return null;
+    }
+    const balanceValue = Number(formattedBalance);
+    if (!Number.isFinite(balanceValue)) {
+      return null;
+    }
+    return balanceValue * eicPriceInWeth;
+  }, [formattedBalance, eicPriceInWeth, isConnected]);
+  const eicValueInWethDisplay = useMemo(() => {
+    if (eicValueInWeth === null) {
+      return "—";
+    }
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 6,
+    }).format(eicValueInWeth);
+  }, [eicValueInWeth]);
 
   const displayedSymbol = symbol ?? "EIC";
   const connectorLabels: Record<string, string> = {
@@ -219,6 +322,33 @@ export default function Dapp() {
                 Read-only balance on Base mainnet.
               </p>
             </div>
+          </div>
+          <div className="mt-6 min-w-0 overflow-hidden rounded-2xl border border-slate-100 bg-white/80 p-5">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+              EIC price
+            </p>
+            <p
+              className="mt-3 min-w-0 break-words overflow-hidden text-lg font-semibold text-slate-900"
+              title={
+                eicPriceInWeth === null
+                  ? "—"
+                  : `1 EIC ≈ ${eicPriceInWeth} WETH`
+              }
+            >
+              1 EIC ≈ {eicPriceDisplay} WETH
+            </p>
+            {isConnected && (
+              <p
+                className="mt-2 min-w-0 break-words overflow-hidden text-sm text-slate-600"
+                title={
+                  eicValueInWeth === null
+                    ? "—"
+                    : `Your EIC ≈ ${eicValueInWeth} WETH`
+                }
+              >
+                Your EIC ≈ {eicValueInWethDisplay} WETH
+              </p>
+            )}
           </div>
           {isConnected && address && (
             <div className="mt-6 rounded-2xl border border-slate-100 bg-white/80 p-5">
