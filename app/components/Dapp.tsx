@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   useAccount,
   useChainId,
@@ -479,7 +479,7 @@ export default function Dapp() {
             </a>
             <a
               className="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:border-white/30"
-              href="https://aerodrome.finance/"
+              href="https://aerodrome.finance/swap"
               target="_blank"
               rel="noreferrer"
             >
@@ -488,6 +488,39 @@ export default function Dapp() {
                 External
               </span>
             </a>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:-translate-y-0.5 hover:border-white/30"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(tokenAddress);
+                  setCopyState((prev) => ({ ...prev, token: true }));
+                  setTimeout(
+                    () => setCopyState((prev) => ({ ...prev, token: false })),
+                    1600,
+                  );
+                }}
+              >
+                {copyState.token ? "Copied EIC address" : "Copy EIC address"}
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-white transition hover:-translate-y-0.5 hover:border-white/30"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(poolAddress);
+                  setCopyState((prev) => ({ ...prev, pool: true }));
+                  setTimeout(
+                    () => setCopyState((prev) => ({ ...prev, pool: false })),
+                    1600,
+                  );
+                }}
+              >
+                {copyState.pool ? "Copied pool address" : "Copy pool address"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              On Aerodrome Swap, paste the EIC address into the token search.
+            </p>
           </div>
           <div className="mt-8 text-xs text-slate-400">
             Token: {tokenAddress}
@@ -503,3 +536,7 @@ export default function Dapp() {
     </div>
   );
 }
+  const [copyState, setCopyState] = useState<{
+    token?: boolean;
+    pool?: boolean;
+  }>({});
