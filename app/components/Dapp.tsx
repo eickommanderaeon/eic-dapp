@@ -64,6 +64,15 @@ export default function Dapp() {
     const tokenDecimals = decimals ?? 18;
     return formatUnits(balance, tokenDecimals);
   }, [balance, decimals]);
+  const formattedBalanceDisplay = useMemo(() => {
+    const value = Number(formattedBalance);
+    if (!Number.isFinite(value)) {
+      return formattedBalance;
+    }
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 4,
+    }).format(value);
+  }, [formattedBalance]);
 
   const displayedSymbol = symbol ?? "EIC";
   const connectorLabels: Record<string, string> = {
@@ -170,9 +179,16 @@ export default function Dapp() {
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
                 EIC balance
               </p>
-              <p className="mt-3 text-2xl font-semibold text-slate-900">
+              <p
+                className="mt-3 min-w-0 break-words overflow-hidden text-2xl font-semibold text-slate-900"
+                title={
+                  isConnected && isBase
+                    ? `${formattedBalance} ${displayedSymbol}`
+                    : `0 ${displayedSymbol}`
+                }
+              >
                 {isConnected && isBase
-                  ? `${formattedBalance} ${displayedSymbol}`
+                  ? `${formattedBalanceDisplay} ${displayedSymbol}`
                   : `0 ${displayedSymbol}`}
               </p>
               <p className="mt-2 text-xs text-slate-500">
