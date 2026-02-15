@@ -24,6 +24,10 @@ const ethUsdFeed =
   "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as const;
 
 export default function Dapp() {
+  const [copyState, setCopyState] = useState<{
+    token?: boolean;
+    pool?: boolean;
+  }>({});
   const chainId = useChainId();
   const account = useAccount();
   const { address, isConnected } = account;
