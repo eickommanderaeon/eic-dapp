@@ -12,6 +12,7 @@ import {
 import { formatUnits } from "viem";
 import { base } from "wagmi/chains";
 import { erc20Abi } from "../lib/erc20Abi";
+import { chainlinkAbi } from "../lib/chainlinkAbi";
 import { v2PairAbi } from "../lib/v2PairAbi";
 
 const fallbackToken = "0x867776d88DfD7061324FD97C8e03fb2DcC29a024";
@@ -19,6 +20,8 @@ const fallbackPool = "0x3Ce3631F923500563F55f0FB895e101E802cb47A";
 const fallbackChainId = 8453;
 const wethAddress =
   "0x4200000000000000000000000000000000000006" as const;
+const ethUsdFeed =
+  "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as const;
 
 export default function Dapp() {
   const chainId = useChainId();
@@ -78,6 +81,20 @@ export default function Dapp() {
     abi: v2PairAbi,
     address: poolAddress,
     functionName: "getReserves",
+    chainId: base.id,
+  });
+
+  const { data: ethUsdDecimals } = useReadContract({
+    abi: chainlinkAbi,
+    address: ethUsdFeed,
+    functionName: "decimals",
+    chainId: base.id,
+  });
+
+  const { data: ethUsdRound } = useReadContract({
+    abi: chainlinkAbi,
+    address: ethUsdFeed,
+    functionName: "latestRoundData",
     chainId: base.id,
   });
 
@@ -182,6 +199,33 @@ export default function Dapp() {
       maximumFractionDigits: 8,
     }).format(eicPriceInWeth);
   }, [eicPriceInWeth]);
+  const ethUsdPrice = useMemo(() => {
+    if (!ethUsdRound || ethUsdDecimals === undefined) {
+      return null;
+    }
+    const answer = ethUsdRound[1];
+    const usdValue = Number(formatUnits(answer, ethUsdDecimals));
+    if (!Number.isFinite(usdValue)) {
+      return null;
+    }
+    return usdValue;
+  }, [ethUsdRound, ethUsdDecimals]);
+  const eicPriceUsd = useMemo(() => {
+    if (eicPriceInWeth === null || ethUsdPrice === null) {
+      return null;
+    }
+    return eicPriceInWeth * ethUsdPrice;
+  }, [eicPriceInWeth, ethUsdPrice]);
+  const eicPriceUsdDisplay = useMemo(() => {
+    if (eicPriceUsd === null) {
+      return "—";
+    }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }).format(eicPriceUsd);
+  }, [eicPriceUsd]);
   const eicValueInWeth = useMemo(() => {
     if (!isConnected || eicPriceInWeth === null) {
       return null;
@@ -200,6 +244,26 @@ export default function Dapp() {
       maximumFractionDigits: 6,
     }).format(eicValueInWeth);
   }, [eicValueInWeth]);
+  const eicValueUsd = useMemo(() => {
+    if (!isConnected || eicPriceUsd === null) {
+      return null;
+    }
+    const balanceValue = Number(formattedBalance);
+    if (!Number.isFinite(balanceValue)) {
+      return null;
+    }
+    return balanceValue * eicPriceUsd;
+  }, [formattedBalance, eicPriceUsd, isConnected]);
+  const eicValueUsdDisplay = useMemo(() => {
+    if (eicValueUsd === null) {
+      return "—";
+    }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 2,
+    }).format(eicValueUsd);
+  }, [eicValueUsd]);
 
   const displayedSymbol = symbol ?? "EIC";
   const connectorLabels: Record<string, string> = {
@@ -337,18 +401,42 @@ export default function Dapp() {
             >
               1 EIC ≈ {eicPriceDisplay} WETH
             </p>
+            <p
+              className="mt-2 min-w-0 break-words overflow-hidden text-sm text-slate-600"
+              title={
+                eicPriceUsd === null ? "—" : `1 EIC ≈ ${eicPriceUsd} USD`
+              }
+            >
+              1 EIC ≈ {eicPriceUsdDisplay}
+            </p>
             {isConnected && (
-              <p
-                className="mt-2 min-w-0 break-words overflow-hidden text-sm text-slate-600"
-                title={
-                  eicValueInWeth === null
-                    ? "—"
-                    : `Your EIC ≈ ${eicValueInWeth} WETH`
-                }
-              >
-                Your EIC ≈ {eicValueInWethDisplay} WETH
-              </p>
+              <>
+                <p
+                  className="mt-2 min-w-0 break-words overflow-hidden text-sm text-slate-600"
+                  title={
+                    eicValueInWeth === null
+                      ? "—"
+                      : `Your EIC ≈ ${eicValueInWeth} WETH`
+                  }
+                >
+                  Your EIC ≈ {eicValueInWethDisplay} WETH
+                </p>
+                <p
+                  className="mt-2 min-w-0 break-words overflow-hidden text-sm text-slate-600"
+                  title={
+                    eicValueUsd === null
+                      ? "—"
+                      : `Your EIC ≈ ${eicValueUsd} USD`
+                  }
+                >
+                  Your EIC ≈ {eicValueUsdDisplay}
+                </p>
+              </>
             )}
+            <p className="mt-3 text-xs text-slate-500">
+              Derived from pool reserves + Chainlink ETH/USD; indicative, not a
+              quote.
+            </p>
           </div>
           {isConnected && address && (
             <div className="mt-6 rounded-2xl border border-slate-100 bg-white/80 p-5">
