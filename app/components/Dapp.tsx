@@ -27,7 +27,12 @@ export default function Dapp() {
   const chainId = useChainId();
   const account = useAccount();
   const { address, isConnected } = account;
-  const { connect, connectors, isPending, pendingConnector } = useConnect();
+  const {
+    connect,
+    connectors: availableConnectors,
+    isPending,
+    pendingConnector,
+  } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
@@ -138,21 +143,34 @@ export default function Dapp() {
       const roundingDigit = Number(fractionPart[maxFractionDigits] ?? "0");
       let truncated = fractionPart.slice(0, maxFractionDigits);
 
-      if (roundingDigit >= 5) {
-        const incremented = (BigInt(truncated) + 1n).toString();
-        if (incremented.length > maxFractionDigits) {
-          integerPart = (BigInt(integerPart) + 1n).toString();
-          truncated = "0".repeat(maxFractionDigits);
-        } else {
-          truncated = incremented.padStart(maxFractionDigits, "0");
+      if (roundingDigit >= 5 && typeof BigInt === "function") {
+        try {
+          const incremented = (BigInt(truncated) + 1n).toString();
+          if (incremented.length > maxFractionDigits) {
+            integerPart = (BigInt(integerPart) + 1n).toString();
+            truncated = "0".repeat(maxFractionDigits);
+          } else {
+            truncated = incremented.padStart(maxFractionDigits, "0");
+          }
+        } catch {
+          // Fall back to truncation if BigInt parsing fails.
         }
       }
       fractionPart = truncated;
     }
 
-    const formattedInteger = new Intl.NumberFormat("en-US").format(
-      BigInt(integerPart),
-    );
+    let formattedInteger = integerPart;
+    if (typeof BigInt === "function") {
+      try {
+        formattedInteger = new Intl.NumberFormat("en-US").format(
+          BigInt(integerPart),
+        );
+      } catch {
+        formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+    } else {
+      formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
     const trimmedFraction = fractionPart.replace(/0+$/, "");
     return trimmedFraction
       ? `${formattedInteger}.${trimmedFraction}`
@@ -266,6 +284,7 @@ export default function Dapp() {
   }, [eicValueUsd]);
 
   const displayedSymbol = symbol ?? "EIC";
+  const connectors = availableConnectors ?? [];
   const connectorLabels: Record<string, string> = {
     injected: "Browser wallet",
     metaMask: "MetaMask",
