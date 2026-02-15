@@ -554,7 +554,3 @@ export default function Dapp() {
     </div>
   );
 }
-  const [copyState, setCopyState] = useState<{
-    token?: boolean;
-    pool?: boolean;
-  }>({});
