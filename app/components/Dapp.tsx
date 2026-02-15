@@ -65,13 +65,37 @@ export default function Dapp() {
     return formatUnits(balance, tokenDecimals);
   }, [balance, decimals]);
   const formattedBalanceDisplay = useMemo(() => {
-    const value = Number(formattedBalance);
-    if (!Number.isFinite(value)) {
+    const [rawInteger, rawFraction = ""] = formattedBalance.split(".");
+    if (!rawInteger) {
       return formattedBalance;
     }
-    return new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 4,
-    }).format(value);
+    let integerPart = rawInteger;
+    let fractionPart = rawFraction;
+    const maxFractionDigits = 4;
+
+    if (fractionPart.length > maxFractionDigits) {
+      const roundingDigit = Number(fractionPart[maxFractionDigits] ?? "0");
+      let truncated = fractionPart.slice(0, maxFractionDigits);
+
+      if (roundingDigit >= 5) {
+        const incremented = (BigInt(truncated) + 1n).toString();
+        if (incremented.length > maxFractionDigits) {
+          integerPart = (BigInt(integerPart) + 1n).toString();
+          truncated = "0".repeat(maxFractionDigits);
+        } else {
+          truncated = incremented.padStart(maxFractionDigits, "0");
+        }
+      }
+      fractionPart = truncated;
+    }
+
+    const formattedInteger = new Intl.NumberFormat("en-US").format(
+      BigInt(integerPart),
+    );
+    const trimmedFraction = fractionPart.replace(/0+$/, "");
+    return trimmedFraction
+      ? `${formattedInteger}.${trimmedFraction}`
+      : formattedInteger;
   }, [formattedBalance]);
 
   const displayedSymbol = symbol ?? "EIC";
@@ -175,7 +199,7 @@ export default function Dapp() {
                   : "Connect a wallet"}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-100 bg-white/80 p-5">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-100 bg-white/80 p-5">
               <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
                 EIC balance
               </p>
