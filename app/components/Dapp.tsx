@@ -287,7 +287,6 @@ export default function Dapp() {
   const connectors = availableConnectors ?? [];
   const connectorLabels: Record<string, string> = {
     injected: "Browser wallet",
-    metaMask: "MetaMask",
     walletConnect: "WalletConnect",
   };
 

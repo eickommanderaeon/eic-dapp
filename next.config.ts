@@ -22,7 +22,6 @@ const nextConfig: NextConfig = {
       "@base-org/account": false,
       "@coinbase/wallet-sdk": false,
       "@gemini-wallet/core": false,
-      "@metamask/sdk": false,
       "@safe-global/safe-apps-provider": false,
       "@safe-global/safe-apps-sdk": false,
       porto: false,
